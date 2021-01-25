@@ -1,33 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node Node;
-struct Node {
-    void *data;
-    Node *next;
+#include "stack.h"
+
+struct Stack {
+     struct Node *bottom;
 };
 
-typedef struct {
-     struct Node *bottom;
-} Stack;
-
-void init(Stack **, void *);
-void push(Stack *, void *);
-void *pop(Stack *);
-void *peek(const Stack *);
- 
 int main(int argc, char const *argv[])
 {
     Stack *stack;
     int *data, i = 123, b = 352;
     data = &i;
     init(&stack, data);
-    pop(stack);
-    pop(stack);
+    printf("%d\n", (*(int *)(peek(stack))));
     return 0;
 }
 
-void init(Stack **stack, void *data) {
+void init(Stack **stack, const void *data) {
     if (data == NULL) {
         printf("NULL data passed to a __%s__", __func__);
         return;
@@ -42,11 +32,11 @@ void init(Stack **stack, void *data) {
         puts("next NULL");
         return;
     }
-    (*stack)->bottom->data = data;
+    (*stack)->bottom->data = (void *)data;
     (*stack)->bottom->next = NULL;
 }
 
-void push(Stack *stack, void *data) {
+void push(Stack *stack, const void *data) {
     if (stack == NULL || data == NULL) {
         printf("NULL argument passed to a __%s__", __func__);
         return;
@@ -58,7 +48,7 @@ void push(Stack *stack, void *data) {
         printf("Can't allocate memory for a node in __%s__", __func__);
         return;
     }
-    tmp->next->data = data;
+    tmp->next->data = (void *)data;
     tmp->next->next = NULL;
 }
 

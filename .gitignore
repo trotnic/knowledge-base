@@ -1,6 +1,8 @@
 *
-!*.c
+!*.[ch]
 !*/
 !.gitignore
 !*.md
 !LICENSE
+!CMakeLists.txt
+CMakeFiles

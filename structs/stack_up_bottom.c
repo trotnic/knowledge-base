@@ -2,31 +2,22 @@
 #include <stdio.h>
 #include <memory.h>
 
-typedef struct Node Node;
-struct Node {
-    void *data;
-    struct Node *next;
-};
+#include "stack.h"
 
-typedef struct {
+struct Stack {
     Node *top;
-} Stack;
-
-void init(Stack **, const void *);
-
-void push(Stack *, const void *);
-void *pop(Stack *);
-void *peek(const Stack *);
+};
 
 int main(int argc, char const *argv[])
 {
-    int *data, value = 123;
+    int *data, value = 312;
     data = &value;
     Stack *stack;
     init(&stack, data);
     printf("%d\n", *((int *)peek(stack)));
     pop(stack);
-
+    push(stack, &value);
+    printf("%d\n", *((int *)pop(stack)));
     return 0;
 }
 

@@ -1,18 +1,6 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include "slinkedlist.h"
 
-typedef struct Node Node;
-struct Node {
-    Node *next;
-    int data;
-    int key;
-};
-
-typedef struct {
-    Node *root;
-} S_List;
-
-void init(S_List **list, int key, int value) {
+void init(S_List **list, int key, const void *data) {
     *list = malloc(sizeof(S_List));
     if (list == NULL) {
         printf("Can't allocate memory for a list in %s", __func__);
@@ -25,18 +13,18 @@ void init(S_List **list, int key, int value) {
     }
     (*list)->root->next = NULL;
     (*list)->root->key = key;
-    (*list)->root->data = value;
+    (*list)->root->data = (void *)data;
 }
 
-void insert(S_List **list, int key, int value) {
+void insert(S_List *list, int key, const void *data) {
     if (list == NULL) {
         printf("NULL list ptr passed to %s", __func__);
         return;
     }
-    Node *tmp = (*list)->root;
+    Node *tmp = list->root;
     while (tmp->next != NULL) {
         if (tmp->key == key) {
-            tmp->data = value;
+            tmp->data = (void *)data;
             return;
         }
         tmp = tmp->next;
@@ -48,23 +36,23 @@ void insert(S_List **list, int key, int value) {
     }
     tmp->next->next = NULL;
     tmp->next->key = key;
-    tmp->next->data = value;
+    tmp->next->data = (void *)data;
 }
 
-void delete(S_List **list, int key) {
+void delete(S_List *list, int key) {
     if (list == NULL) {
         printf("NULL list ptr passed to %s", __func__);
         return;
     }
-    if ((*list)->root->key == key) {
-        Node *tmp = (*list)->root->next;
-        free((*list)->root);
-        (*list)->root = tmp;
+    if (list->root->key == key) {
+        Node *tmp = list->root->next;
+        free(list->root);
+        list->root = tmp;
         return;
     }
 
-    Node *prev = (*list)->root;
-    Node *curr = (*list)->root;
+    Node *prev = list->root;
+    Node *curr = list->root;
 
     while (curr != NULL) {
         if (curr->key == key) {
@@ -78,10 +66,10 @@ void delete(S_List **list, int key) {
     printf("No such key to delete - %d\n", key);
 }
 
-int search(S_List *list, int key) {
+void *search(S_List *list, int key) {
     if (list == NULL) {
         printf("NULL list ptr passed to %s", __func__);
-        return -1;
+        return NULL;
     }
     Node *current = list->root;
     while (current != NULL)  {
@@ -91,30 +79,36 @@ int search(S_List *list, int key) {
         current = current->next;
     }
     printf("No value for a key - %d\n", key);
-    return -1;
+    return NULL;
 }
 
-void display(S_List **list) {
+void iterate(S_List *list, void(*handler)(void *, int)) {
     if (list == NULL) {
         printf("NULL list ptr passed to %s", __func__);
         return;
     }
-    struct Node *tmp = (*list)->root;
+    struct Node *tmp = list->root;
     while (tmp != NULL) {
-        printf("key - %d, value - %d\n", tmp->key, tmp->data);
+        handler(tmp->data, tmp->key);
         tmp = tmp->next;
     }
+}
+
+// -
+
+void displayInt(void *obj, int key) {    
+    printf("key - %d, value - %d\n", key, (*(int *)obj));
 }
 
 int main(int argc, char const *argv[])
 {
     S_List *list;
-    init(&list, 1, 12);
-    insert(&list, 2, 235);
-    insert(&list, 3, 735);
-    insert(&list, 4, 935);
-    insert(&list, 5, 535);
-    delete(&list, 1);
-    display(&list);
+    int a = 12, b = 235, c = 735, d = 935;
+    init(&list, 1, &a);
+    insert(list, 2, &b);
+    insert(list, 3, &c);
+    insert(list, 4, &d);
+    delete(list, 1);
+    iterate(list, displayInt);
     return 0;
 }

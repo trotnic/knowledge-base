@@ -112,16 +112,16 @@ void insert(Node **tree, const int value) {
     }
 }
 
-void delete(Node **tree, int value) {
-    if (tree == NULL) {
-        printf("NULL pointer passed to a __%s__\n", __func__);
-        return;
-    }
-    // 1'st case - no children
-    if ((*tree)->leftPtr == (*tree)->rightPtr == NULL) {
+// void delete(Node **tree, int value) {
+//     if (tree == NULL) {
+//         printf("NULL pointer passed to a __%s__\n", __func__);
+//         return;
+//     }
+//     // 1'st case - no children
+//     if ((*tree)->leftPtr == (*tree)->rightPtr == NULL) {
 
-    }
-}
+//     }
+// }
 
 // - 
 

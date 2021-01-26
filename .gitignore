@@ -1,5 +1,7 @@
 *
 !*.[ch]
+!*.zsh
+!*.txt
 !*/
 !.gitignore
 !*.md

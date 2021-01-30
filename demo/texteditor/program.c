@@ -20,10 +20,13 @@
 #include <time.h>
 #include <ctype.h>
 
+#include "../../structs/stack.h"
+
 
 /*** prototypes ***/
 
 void editorSetStatusMessage(const char *, ...);
+void editorRefreshScreen();
 
     /*
     * \x1b == <esc>
@@ -103,6 +106,17 @@ struct editorConfig {
     time_t statusmsg_time;
     struct termios orig_termios;
 } E;
+
+typedef struct {
+    erow *row;
+    int numrows;
+    int cx, cy;
+    int rx;
+    int rowoffset;
+    int coloffset;
+} snapshot;
+
+Stack *failsBuf;
 
 /*** terminal ***/
 
@@ -281,6 +295,24 @@ void editorInsertChar(int c) {
     E.cx++;
 }
 
+void editorUndoLastSave() {
+    snapshot *frame = pop(failsBuf);
+    if (frame != NULL) {
+        E.row = NULL;
+        E.numrows = 0;
+        E.cx = frame->cx;
+        E.cy = frame->cy;
+        E.rx = frame->rx;
+        E.coloffset = frame->coloffset;
+        E.rowoffset = frame->rowoffset;
+        for (int i = 0; i < frame->numrows; i++)
+            editorAppendRow(frame->row[i].chars, frame->row[i].size);
+            
+        editorRefreshScreen();
+        editorSetStatusMessage("Undo");
+    }
+}
+
 /*** file i/o ***/
 
     /*
@@ -349,6 +381,19 @@ void editorSave() {
         if (ftruncate(fd, len) != -1) {
             if (write(fd, buf, len) == len) {
                 close(fd);
+
+                snapshot *frame = malloc(sizeof(snapshot));
+                frame->numrows = E.numrows;
+                frame->row = malloc((E.numrows) * sizeof(erow));
+                memmove(frame->row, E.row, (E.numrows) * sizeof(erow));
+                frame->cx = E.cx;
+                frame->cy = E.cy;
+                frame->rx = E.rx;
+                frame->coloffset = E.coloffset;
+                frame->rowoffset = E.rowoffset;
+                // MARK
+                push(failsBuf, frame);
+
                 free(buf);
                 editorSetStatusMessage("%d bytes written to disk", len);
                 return;
@@ -559,7 +604,9 @@ void editorProcessKeypress() {
         case CTRL_KEY('s'):
             editorSave();
             break;
-
+        case CTRL_KEY('z'):
+            editorUndoLastSave();
+            break;
         case HOME_KEY:
             E.cx = 0;
             break;
@@ -607,6 +654,8 @@ void initEditor() {
 
     if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
     E.screenrows -= 2;
+
+    init(&failsBuf);
 }
 
 int main(int argc, char const *argv[])

@@ -2,7 +2,10 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-// https://viewsourcecode.org/snaptoken/kilo/05.aTextEditor.html
+    /*
+    * ORIGINAL
+    *    https://viewsourcecode.org/snaptoken/kilo/01.setup.html
+    */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,20 +13,36 @@
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <time.h>
 #include <ctype.h>
 
+
+/*** prototypes ***/
+
+void editorSetStatusMessage(const char *, ...);
+
     /*
     * \x1b == <esc>
+    * 
+    * here i can talk in terms of reference-counting system
     */
 
 /*** defines ***/
 
 #define EDITOR_VERSION "0.1.0"
 #define EDITOR_NAME "uditor"
+
+    /*
+    * i wish to memorize access rights one day... 😩
+    * 
+    *  u  g  o
+    * rw-r--r--
+    */
+#define RW_PERMS 0644
 
     /*
     * just a tab size
@@ -33,6 +52,7 @@
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKey {
+    BACKSPACE = 127,
     ARROW_LEFT = 1000,
     ARROW_RIGHT,
     ARROW_UP,
@@ -242,7 +262,48 @@ void editorAppendRow(char *s, size_t len) {
     E.numrows++;
 }
 
+void editorRowInsertChar(erow *row, int at, int c) {
+    if (at < 0 || at > row->size) at = row->size;
+    row->chars = realloc(row->chars, row->size + 2);
+    memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+    row->size++;
+    row->chars[at] = c;
+    editorUpdateRow(row);
+}
+
+/*** editor operations ***/
+
+void editorInsertChar(int c) {
+    if (E.cy == E.numrows) {
+        editorAppendRow("", 0);
+    }
+    editorRowInsertChar(&E.row[E.cy], E.cx, c);
+    E.cx++;
+}
+
 /*** file i/o ***/
+
+    /*
+    * func expects that a caller 
+    * will release a memory allocated
+    */
+char *editorRowsToString(int *buflength) {
+    int totallength = 0;
+    for (int i = 0; i < E.numrows; i++)
+        totallength += E.row[i].size + 1;
+    *buflength = totallength;
+
+    char *buff = malloc(totallength);
+    char *carrete = buff;
+    for (int i = 0; i < E.numrows; i++) {
+        memcpy(carrete, E.row[i].chars, E.row[i].size);
+        carrete += E.row[i].size;
+        *carrete = '\n';
+        carrete++;
+    }
+
+    return buff;
+}
 
 void editorOpen(char *filename) {
     free(E.filename);
@@ -263,15 +324,41 @@ void editorOpen(char *filename) {
         /*
         * trimming \r, \n
         */
-        while ((linelen = getline(&line, &linecapacity, fp)) != -1) {
+        do  {
             while (linelen > 0 && (line[linelen - 1] == '\n' ||
                                 line[linelen - 1] == '\r'))
             linelen--;
             editorAppendRow(line, linelen);
-        }
+        } while ((linelen = getline(&line, &linecapacity, fp)) != -1);
     }
     free(line);
     fclose(fp);
+}
+
+void editorSave() {
+    if (E.filename == NULL) {
+        editorSetStatusMessage("Can't save file because you didn't provide name 😿");
+        return;
+    }
+
+    int len;
+    char *buf = editorRowsToString(&len);
+
+    int fd = open(E.filename, O_RDWR | O_CREAT, RW_PERMS);
+    if (fd != -1) {
+        if (ftruncate(fd, len) != -1) {
+            if (write(fd, buf, len) == len) {
+                close(fd);
+                free(buf);
+                editorSetStatusMessage("%d bytes written to disk", len);
+                return;
+            }
+        }
+        close(fd);
+    }
+    
+    free(buf);
+    editorSetStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
 /*** append buffer ***/
@@ -438,7 +525,7 @@ void editorMoveCursor(int key) {
             break;
         case ARROW_DOWN:
             if (E.cy < E.numrows) E.cy++;
-            break;
+            break;        
     }
 
     row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
@@ -458,6 +545,19 @@ void editorProcessKeypress() {
             write(STDOUT_FILENO, "\x1b[2J", 4);
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
+            break;
+
+        case BACKSPACE:
+        case DEL_KEY:
+        case CTRL_KEY('h'):
+        case CTRL_KEY('l'):
+        case CTRL_KEY('m'):
+        case '\x1b':        
+                    
+            break;
+
+        case CTRL_KEY('s'):
+            editorSave();
             break;
 
         case HOME_KEY:
@@ -484,7 +584,10 @@ void editorProcessKeypress() {
         case ARROW_UP:
         case ARROW_DOWN:
             editorMoveCursor(c);
-        break;
+            break;
+
+        default:
+            editorInsertChar(c);
     }
 }
 
@@ -514,7 +617,7 @@ int main(int argc, char const *argv[])
         editorOpen((char *)argv[1]);
     }
 
-    editorSetStatusMessage("HELP: Ctrl-Q = quit");
+    editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit");
     
     while (1) {
         editorRefreshScreen();    

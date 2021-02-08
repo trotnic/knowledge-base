@@ -1,4 +1,8 @@
+#ifndef DLINKEDLIST_LIST_H
+#define DLINKEDLIST_LIST_H
+
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef struct node t_node;
 typedef struct list t_list;
@@ -26,3 +30,5 @@ void *delete_node(t_list *, t_node *);
 void *get_data_at(t_list *, size_t);
 
 t_node *get_node_at(t_list *, size_t);
+
+#endif //DLINKEDLIST_LIST_H

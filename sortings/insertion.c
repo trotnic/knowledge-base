@@ -1,22 +1,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 
 void sort(int arr[], const int size);
 void initialize(int arr[], const int size, const int lowerBound, const int upperBound);
 void print_array(const int arr[], const int size);
 
+static const char *tops[] = {""};
+
 int main(int argc, char const *argv[]) 
 {
-    const int size = 10;
-    const int a = 10;
-    const int b = 20;
-    int arr[size];
+    strcmp()
+    // const int size = 10;
+    // const int a = 10;
+    // const int b = 20;
+    // int arr[size];
     
-    initialize(arr, size, a, b);
-    print_array(arr, size);
-    sort(arr, size);
-    print_array(arr, size);
+    // initialize(arr, size, a, b);
+    // print_array(arr, size);
+    // sort(arr, size);
+    // print_array(arr, size);
 }
 
 void print_array(const int arr[], const int size) 

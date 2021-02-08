@@ -5,14 +5,19 @@
 
 #include "list.h"
 
-// UTIL
+struct node {
+    void *data;
+    struct node *next;
+    struct node *prev;    
+};
 
-void error(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-}
+struct list {
+    struct node *head;
+    struct node *tail;
+    size_t count;
+};
+
+// UTIL
 
 void init(t_list **list, void *data, size_t size, unsigned int amount) {
     *list = malloc(sizeof(t_list));
